@@ -1,3 +1,44 @@
+<template>
+    <section class="card">
+        <div class="eyebrow">{{ title }}</div>
+        <h1>Echo Island Sandbox</h1>
+        <p class="summary">
+            组件默认展示主题变量、设计尺寸布局和 `EI` 变量同步。放进回声岛后会读写
+            `变量.计数器`，本地开发时则自动降级为纯前端预览。
+        </p>
+
+        <dl class="status-grid">
+            <div class="status-item">
+                <dt>运行模式</dt>
+                <dd>{{ status === 'sandbox' ? 'Sandbox / EI 已连接' : 'Browser / 本地预览' }}</dd>
+            </div>
+            <div class="status-item">
+                <dt>当前频道</dt>
+                <dd>{{ channelName }}</dd>
+            </div>
+        </dl>
+
+        <div class="counter-panel">
+            <span class="counter-label">计数器</span>
+            <strong class="counter-value">{{ counter }}</strong>
+        </div>
+
+        <div class="actions">
+            <button
+                type="button"
+                class="primary-button"
+                :disabled="isBusy"
+                @click="increaseCounter"
+            >
+                {{ isBusy ? '写入中...' : '+1 写入变量' }}
+            </button>
+            <button type="button" class="secondary-button" :disabled="isBusy" @click="resetCounter">
+                重置
+            </button>
+        </div>
+    </section>
+</template>
+
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
@@ -81,47 +122,6 @@ onBeforeUnmount(() => {
     cleanupSubscriptions();
 });
 </script>
-
-<template>
-    <section class="card">
-        <div class="eyebrow">{{ title }}</div>
-        <h1>Echo Island Sandbox</h1>
-        <p class="summary">
-            组件默认展示主题变量、设计尺寸布局和 `EI` 变量同步。放进回声岛后会读写
-            `变量.计数器`，本地开发时则自动降级为纯前端预览。
-        </p>
-
-        <dl class="status-grid">
-            <div class="status-item">
-                <dt>运行模式</dt>
-                <dd>{{ status === 'sandbox' ? 'Sandbox / EI 已连接' : 'Browser / 本地预览' }}</dd>
-            </div>
-            <div class="status-item">
-                <dt>当前频道</dt>
-                <dd>{{ channelName }}</dd>
-            </div>
-        </dl>
-
-        <div class="counter-panel">
-            <span class="counter-label">计数器</span>
-            <strong class="counter-value">{{ counter }}</strong>
-        </div>
-
-        <div class="actions">
-            <button
-                type="button"
-                class="primary-button"
-                :disabled="isBusy"
-                @click="increaseCounter"
-            >
-                {{ isBusy ? '写入中...' : '+1 写入变量' }}
-            </button>
-            <button type="button" class="secondary-button" :disabled="isBusy" @click="resetCounter">
-                重置
-            </button>
-        </div>
-    </section>
-</template>
 
 <style scoped>
 .card {

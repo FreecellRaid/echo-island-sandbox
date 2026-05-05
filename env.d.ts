@@ -16,6 +16,7 @@ interface EchoIslandApi {
     parse(str: string): Promise<unknown>;
     msg(text: string): void;
     toast(text: string): void;
+    setDesignSize(width: number, height: number): void;
 }
 
 declare global {

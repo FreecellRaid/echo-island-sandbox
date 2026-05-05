@@ -5,6 +5,49 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import vueDevTools from 'vite-plugin-vue-devtools';
 
+function toGlobalVueBindings(specifiers: string) {
+    return specifiers
+        .split(',')
+        .map((specifier) => specifier.trim())
+        .filter(Boolean)
+        .map((specifier) => {
+            const [imported, local] = specifier.split(/\s+as\s+/);
+            if (!imported) {
+                return '';
+            }
+
+            return local ? `${imported}: ${local}` : imported;
+        })
+        .filter(Boolean)
+        .join(', ');
+}
+
+function externalizeVueRuntime(): Plugin {
+    return {
+        name: 'externalize-vue-runtime',
+        apply: 'build',
+        generateBundle(_, bundle) {
+            for (const entry of Object.values(bundle)) {
+                if (entry.type !== 'chunk' || !entry.code.includes(`from"vue"`)) {
+                    continue;
+                }
+
+                entry.code = entry.code.replace(
+                    /import\s*\{([^}]+)\}\s*from\s*"vue";?/g,
+                    (_full: string, specifiers: string) => {
+                        const bindings = toGlobalVueBindings(specifiers);
+                        return `const __eiVue = window.Vue;
+if (!__eiVue) {
+    throw new Error('Echo Island did not inject global Vue before app bootstrap.');
+}
+const { ${bindings} } = __eiVue;`;
+                    },
+                );
+            }
+        },
+    };
+}
+
 function inlineEchoIslandHtml(): Plugin {
     return {
         name: 'inline-echo-island-html',
@@ -53,7 +96,6 @@ function inlineEchoIslandHtml(): Plugin {
                         inlinedFiles.add(fileName);
                         const attributes = `${before} ${after}`
                             .replace(/\bcrossorigin\b/g, '')
-                            .replace(/\stype="module"/g, '')
                             .replace(/\s+/g, ' ')
                             .trim();
 
@@ -75,7 +117,12 @@ function inlineEchoIslandHtml(): Plugin {
 export default defineConfig(({ command }) => ({
     base: './',
     publicDir: false,
-    plugins: [vue(), command === 'serve' ? vueDevTools() : null, inlineEchoIslandHtml()],
+    plugins: [
+        vue(),
+        command === 'serve' ? vueDevTools() : null,
+        externalizeVueRuntime(),
+        inlineEchoIslandHtml(),
+    ],
     resolve: {
         alias: {
             '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -85,5 +132,8 @@ export default defineConfig(({ command }) => ({
         cssCodeSplit: false,
         assetsInlineLimit: Number.MAX_SAFE_INTEGER,
         modulePreload: false,
+        rollupOptions: {
+            external: command === 'build' ? ['vue'] : [],
+        },
     },
 }));
