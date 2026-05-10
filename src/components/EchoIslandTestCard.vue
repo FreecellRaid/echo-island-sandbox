@@ -2,10 +2,7 @@
     <section class="card">
         <div class="eyebrow">{{ title }}</div>
         <h1>Echo Island Sandbox</h1>
-        <p class="summary">
-            组件默认展示主题变量、设计尺寸布局和 `EI` 变量同步。放进回声岛后会读写
-            `变量.计数器`，本地开发时则自动降级为纯前端预览。
-        </p>
+        <p class="summary">组件默认展示主题变量、设计尺寸布局和 `EI` 变量同步。</p>
 
         <dl class="status-grid">
             <div class="status-item">

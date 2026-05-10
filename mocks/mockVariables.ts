@@ -17,6 +17,46 @@ export const echoIslandMockConfig: EchoIslandMockConfig = {
             { 名称: '生命药水', 价格: 50 },
             { 名称: '法力药水', 价格: 60 },
         ],
+        cursor: [
+            {
+                name: 'default',
+                resource: 'https://api.iconify.design/lucide/mouse-pointer-2.svg?color=%23fff',
+            },
+            {
+                name: 'pointer',
+                resource: 'https://api.iconify.design/lucide/hand.svg?color=%23fff',
+            },
+            {
+                name: 'text',
+                resource: 'https://api.iconify.design/lucide/text-cursor.svg?color=%23fff',
+            },
+            {
+                name: 'crosshair',
+                resource: 'https://api.iconify.design/lucide/crosshair.svg?color=%23fff',
+            },
+            {
+                name: 'move',
+                resource: 'https://api.iconify.design/lucide/move.svg?color=%23fff',
+            },
+            {
+                name: 'grab',
+                resource: 'https://api.iconify.design/lucide/hand-metal.svg?color=%23fff',
+            },
+            {
+                name: 'wait',
+                resource: 'https://api.iconify.design/lucide/loader-circle.svg?color=%23fff',
+            },
+            {
+                name: 'not-allowed',
+                resource: 'https://api.iconify.design/lucide/ban.svg?color=%23fff',
+            },
+        ],
+        config: [
+            {
+                width: 28,
+                height: 28,
+            },
+        ],
     },
     globalVariables: {
         今日任务: ['收集药草', '巡逻港口'],
