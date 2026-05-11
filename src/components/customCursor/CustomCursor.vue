@@ -1,5 +1,12 @@
 <template>
-    <div v-if="activeResource" class="custom-cursor" :style="cursorStyle" aria-hidden="true" />
+    <div v-if="activeResource" class="custom-cursor" :style="cursorStyle" aria-hidden="true">
+        <img
+            class="custom-cursor-image"
+            :src="activeResource"
+            :alt="activeCursorName"
+            draggable="false"
+        />
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -59,7 +66,6 @@ const cursorStyle = computed(() => ({
     top: `${pointerY.value}px`,
     width: `${cursorConfig.value.width}px`,
     height: `${cursorConfig.value.height}px`,
-    '--cursor-resource': `url("${activeResource.value}")`,
 }));
 
 function normalizeCursorName(value: string) {
@@ -210,17 +216,20 @@ onBeforeUnmount(() => {
 .custom-cursor {
     position: fixed;
     z-index: 2147483647;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     pointer-events: none;
     transform: translate(-4px, -4px);
-    background: var(--ei-primary, #38bdf8);
-    -webkit-mask-image: var(--cursor-resource);
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    -webkit-mask-size: contain;
-    mask-image: var(--cursor-resource);
-    mask-repeat: no-repeat;
-    mask-position: center;
-    mask-size: contain;
+}
+
+.custom-cursor-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
 }
 
 :global(.custom-cursor-hidden-target) {
