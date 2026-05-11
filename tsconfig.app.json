@@ -4,6 +4,9 @@
     "exclude": ["src/**/__tests__/*"],
     "compilerOptions": {
         "noUncheckedIndexedAccess": true,
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
 
         "paths": {
             "@/*": ["./src/*"]
