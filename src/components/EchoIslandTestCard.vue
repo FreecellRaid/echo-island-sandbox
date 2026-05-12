@@ -38,12 +38,14 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { createEiAssignThrottle } from '../utils/eiRateLimit';
 
 const counter = ref(0);
 const channelName = ref('未连接');
 const status = ref<'browser' | 'sandbox'>('browser');
 const isBusy = ref(false);
 const unsubscribeFns: Array<() => void> = [];
+const assignCounter = createEiAssignThrottle(1000);
 
 const title = computed(() =>
     status.value === 'sandbox' ? '回声岛沙盒联调组件' : '本地预览测试组件',
@@ -69,7 +71,7 @@ async function syncCounter(nextValue: number) {
 
     isBusy.value = true;
     try {
-        await ei.assign('计数器', nextValue);
+        await assignCounter('计数器', nextValue);
     } finally {
         isBusy.value = false;
     }
