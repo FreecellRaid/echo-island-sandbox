@@ -88,7 +88,7 @@ export function createEiDebounce<TArgs extends unknown[]>(
         deferredQueue.push(deferred);
 
         if (timerId !== null) {
-            window.clearTimeout(timerId);
+            window.clearTimeout(timerId as unknown as number);
             toast('replaced');
         }
 
@@ -108,7 +108,7 @@ export function createEiDebounce<TArgs extends unknown[]>(
             } catch (error) {
                 flushDeferredQueue(deferredQueue, error);
             }
-        }, waitMs);
+        }, waitMs) as unknown as ReturnType<typeof window.setTimeout>;
 
         if (deferredQueue.length === 1) {
             toast('scheduled');
@@ -173,7 +173,7 @@ export function createEiThrottle<TArgs extends unknown[]>(
         toast('scheduled');
         timerId = window.setTimeout(() => {
             void flushTrailing();
-        }, waitMs - elapsed);
+        }, waitMs - elapsed) as unknown as ReturnType<typeof window.setTimeout>;
 
         return deferred.promise;
     };
