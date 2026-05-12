@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import DataImporter from '@/components/DataImporter.vue';
+import DataTransformer from '@/components/DataTransformer.vue';
 </script>
 
 <template>
-    <DataImporter />
+    <DataTransformer />
 </template>

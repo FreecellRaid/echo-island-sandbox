@@ -43,41 +43,30 @@
 
         <div class="importer-section">
             <label class="importer-label">数据内容</label>
-            <textarea v-model="rawData" placeholder="粘贴数据内容..." class="importer-textarea" />
+            <textarea v-model="rawData" :placeholder="dataPlaceholder" class="importer-textarea" />
+            <p class="importer-hint">{{ formatHint }}</p>
             <p v-if="parseError" class="importer-error">× {{ parseError }}</p>
             <p v-else-if="rawData" class="importer-success">✓ 格式有效</p>
         </div>
-
+        <!-- 状态消息 -->
+        <div
+            v-if="statusMessage"
+            :class="['importer-message', `importer-message-${statusMessage.type}`]"
+        >
+            {{ statusMessage.text }}
+        </div>
         <!-- 操作按钮 -->
         <div class="importer-buttons">
-            <button
-                @click="handleImport"
-                :disabled="!isValid || isBusy"
-                class="importer-btn importer-btn-primary"
-            >
+            <button @click="handleImport" :disabled="!isValid || isBusy" class="importer-btn">
                 <span v-if="isImporting">导入中...</span>
                 <span v-else>导入数据</span>
             </button>
-            <button
-                @click="handleExport"
-                :disabled="!canExport || isBusy"
-                class="importer-btn importer-btn-secondary"
-            >
+            <button @click="handleExport" :disabled="!canExport || isBusy" class="importer-btn">
                 <span v-if="isExporting">导出中...</span>
                 <span v-else>导出数据</span>
             </button>
             <button @click="reset" class="importer-btn importer-btn-secondary">重置</button>
         </div>
-
-        <!-- 状态消息 -->
-        <transition name="fade">
-            <div
-                v-if="statusMessage"
-                :class="['importer-message', `importer-message-${statusMessage.type}`]"
-            >
-                {{ statusMessage.text }}
-            </div>
-        </transition>
     </div>
 </template>
 
@@ -94,6 +83,9 @@ interface StatusMessage {
     text: string;
 }
 
+const EI_ASSIGN_VALUE_LIMIT_BYTES = 2048;
+const textEncoder = new TextEncoder();
+
 const format = ref<Format>('json');
 const rawData = ref('');
 const varName = ref('');
@@ -108,6 +100,29 @@ const isValid = computed(
 );
 const canExport = computed(() => varName.value.trim().length > 0);
 const isBusy = computed(() => isImporting.value || isExporting.value);
+const dataPlaceholder = computed(() =>
+    format.value === 'json'
+        ? `示例:
+[
+  { "名称": "生命药水", "价格": 50 },
+  { "名称": "法力药水", "价格": 60 }
+]`
+        : `示例:
+名称,价格
+生命药水,50
+法力药水,60`,
+);
+const formatHint = computed(() =>
+    format.value === 'json'
+        ? 'JSON 导入/导出统一使用数组格式；输入单个对象时会自动包装成单行数组。'
+        : 'CSV 首行为表头，导入后会转换为对象数组。',
+);
+const throttledAssign = createEiAssignThrottle(1000, {
+    messages: {
+        scheduled: '写入过快，已排队等待...',
+        replaced: '待处理的写入已更新为最新值',
+    },
+});
 
 /**
  * 解析 CSV 行，处理引号和逗号
@@ -161,6 +176,211 @@ function parseCSV(text: string): unknown {
     });
 }
 
+function isIdentifierStart(char: string): boolean {
+    return /[A-Za-z_$]/.test(char);
+}
+
+function isIdentifierPart(char: string): boolean {
+    return /[A-Za-z0-9_$-]/.test(char);
+}
+
+function normalizeJsonLike(input: string): string {
+    let output = '';
+    let i = 0;
+    let inDoubleQuote = false;
+    let inSingleQuote = false;
+
+    while (i < input.length) {
+        const char = input[i];
+        const nextChar = input[i + 1];
+
+        if (inDoubleQuote) {
+            if (char === '\\') {
+                output += char;
+                if (nextChar !== undefined) {
+                    output += nextChar;
+                    i += 2;
+                    continue;
+                }
+            } else if (char === '"') {
+                inDoubleQuote = false;
+            }
+
+            output += char;
+            i++;
+            continue;
+        }
+
+        if (inSingleQuote) {
+            if (char === '\\') {
+                if (nextChar === undefined) {
+                    output += '\\\\';
+                    i++;
+                    continue;
+                }
+
+                const escapedChar = nextChar;
+                switch (escapedChar) {
+                    case "'":
+                        output += "'";
+                        break;
+                    case '"':
+                        output += '\\"';
+                        break;
+                    default:
+                        output += `\\${escapedChar}`;
+                        break;
+                }
+                i += 2;
+                continue;
+            }
+
+            if (char === '"') {
+                output += '\\"';
+                i++;
+                continue;
+            }
+
+            if (char === "'") {
+                output += '"';
+                inSingleQuote = false;
+                i++;
+                continue;
+            }
+
+            output += char;
+            i++;
+            continue;
+        }
+
+        if (char === '/' && nextChar === '/') {
+            i += 2;
+            while (i < input.length && input[i] !== '\n') {
+                i++;
+            }
+            continue;
+        }
+
+        if (char === '/' && nextChar === '*') {
+            i += 2;
+            while (i < input.length && !(input[i] === '*' && input[i + 1] === '/')) {
+                i++;
+            }
+            i += 2;
+            continue;
+        }
+
+        if (char === '"') {
+            output += char;
+            inDoubleQuote = true;
+            i++;
+            continue;
+        }
+
+        if (char === "'") {
+            output += '"';
+            inSingleQuote = true;
+            i++;
+            continue;
+        }
+
+        if (char === '{' || char === ',') {
+            output += char;
+            i++;
+
+            while (i < input.length && /\s/.test(input[i]!)) {
+                output += input[i]!;
+                i++;
+            }
+
+            const keyStart = input[i];
+            if (!keyStart || !isIdentifierStart(keyStart)) {
+                continue;
+            }
+
+            let keyEnd = i + 1;
+            while (keyEnd < input.length && isIdentifierPart(input[keyEnd]!)) {
+                keyEnd++;
+            }
+
+            let colonIndex = keyEnd;
+            while (colonIndex < input.length && /\s/.test(input[colonIndex]!)) {
+                colonIndex++;
+            }
+
+            if (input[colonIndex] === ':') {
+                const key = input.slice(i, keyEnd);
+                output += `"${key}"`;
+                output += input.slice(keyEnd, colonIndex + 1);
+                i = colonIndex + 1;
+                continue;
+            }
+
+            continue;
+        }
+
+        output += char;
+        i++;
+    }
+
+    return output.replace(/,\s*([}\]])/g, '$1');
+}
+
+function parseJsonLike(text: string): unknown {
+    try {
+        return JSON.parse(text);
+    } catch {
+        return JSON.parse(normalizeJsonLike(text));
+    }
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeCollectionData(data: unknown): unknown[] {
+    if (Array.isArray(data)) {
+        return data;
+    }
+
+    if (isPlainObject(data)) {
+        return [data];
+    }
+
+    throw new Error('列表/表格变量必须传入数组；如只有一行数据，请使用 [ {...} ] 格式');
+}
+
+function getValueSizeBytes(value: unknown): number {
+    return textEncoder.encode(JSON.stringify(value)).length;
+}
+
+async function assignInChunks(path: string, value: unknown, targetScope: Scope) {
+    if (getValueSizeBytes(value) <= EI_ASSIGN_VALUE_LIMIT_BYTES) {
+        await throttledAssign(path, value, targetScope);
+        return;
+    }
+
+    if (Array.isArray(value)) {
+        await throttledAssign(path, [], targetScope);
+
+        for (const [index, item] of value.entries()) {
+            await assignInChunks(`${path}.${index + 1}`, item, targetScope);
+        }
+        return;
+    }
+
+    if (isPlainObject(value)) {
+        await throttledAssign(path, {}, targetScope);
+
+        for (const [key, item] of Object.entries(value)) {
+            await assignInChunks(`${path}.${key}`, item, targetScope);
+        }
+        return;
+    }
+
+    throw new Error(`存在无法拆分且超过 2KB 的值，路径 "${path}" 的当前值需要进一步压缩后再导入`);
+}
+
 function parseData(): unknown {
     const data = rawData.value.trim();
 
@@ -171,7 +391,7 @@ function parseData(): unknown {
     switch (format.value) {
         case 'json':
             try {
-                return JSON.parse(data);
+                return normalizeCollectionData(parseJsonLike(data));
             } catch (err) {
                 throw new Error(
                     `JSON 解析失败: ${err instanceof Error ? err.message : String(err)}`,
@@ -201,64 +421,48 @@ function stringifyCSVValue(value: unknown): string {
 }
 
 function toCSV(data: unknown): string {
-    if (Array.isArray(data)) {
-        if (data.length === 0) {
-            return '';
-        }
+    const normalizedData = normalizeCollectionData(data);
+    if (normalizedData.length === 0) {
+        return '';
+    }
 
-        const hasObjectRow = data.some(
-            (item) => typeof item === 'object' && item !== null && !Array.isArray(item),
-        );
+    const hasObjectRow = normalizedData.some(
+        (item) => typeof item === 'object' && item !== null && !Array.isArray(item),
+    );
 
-        if (!hasObjectRow) {
-            return ['value', ...data.map((item) => stringifyCSVValue(item))].join('\n');
-        }
+    if (!hasObjectRow) {
+        return ['value', ...normalizedData.map((item) => stringifyCSVValue(item))].join('\n');
+    }
 
-        const headers = Array.from(
-            new Set(
-                data.flatMap((item) =>
-                    typeof item === 'object' && item !== null && !Array.isArray(item)
-                        ? Object.keys(item)
-                        : ['value'],
-                ),
+    const headers = Array.from(
+        new Set(
+            normalizedData.flatMap((item) =>
+                typeof item === 'object' && item !== null && !Array.isArray(item)
+                    ? Object.keys(item)
+                    : ['value'],
             ),
-        );
+        ),
+    );
 
-        const rows = data.map((item) => {
-            if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-                return headers.map((header) =>
-                    stringifyCSVValue((item as Record<string, unknown>)[header]),
-                );
-            }
-
-            return headers.map((header) => stringifyCSVValue(header === 'value' ? item : ''));
-        });
-
-        return [headers.map(stringifyCSVValue).join(','), ...rows.map((row) => row.join(','))].join(
-            '\n',
-        );
-    }
-
-    if (typeof data === 'object' && data !== null) {
-        const record = data as Record<string, unknown>;
-        const headers = Object.keys(record);
-        if (headers.length === 0) {
-            return '';
+    const rows = normalizedData.map((item) => {
+        if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+            return headers.map((header) =>
+                stringifyCSVValue((item as Record<string, unknown>)[header]),
+            );
         }
 
-        return [
-            headers.map(stringifyCSVValue).join(','),
-            headers.map((header) => stringifyCSVValue(record[header])).join(','),
-        ].join('\n');
-    }
+        return headers.map((header) => stringifyCSVValue(header === 'value' ? item : ''));
+    });
 
-    return ['value', stringifyCSVValue(data)].join('\n');
+    return [headers.map(stringifyCSVValue).join(','), ...rows.map((row) => row.join(','))].join(
+        '\n',
+    );
 }
 
 function serializeData(data: unknown): string {
     switch (format.value) {
         case 'json':
-            return JSON.stringify(data, null, 2);
+            return JSON.stringify(normalizeCollectionData(data), null, 2);
         case 'csv':
             return toCSV(data);
         default:
@@ -294,19 +498,11 @@ async function handleImport() {
     try {
         const parsedData = parseData();
         const varNameTrimmed = varName.value.trim();
-
-        // 使用默认节流限流
-        const throttledAssign = createEiAssignThrottle(1000, {
-            messages: {
-                scheduled: '写入过快，已排队等待...',
-                replaced: '待处理的写入已更新为最新值',
-            },
-        });
-        await throttledAssign(varNameTrimmed, parsedData, scope.value);
+        await assignInChunks(varNameTrimmed, parsedData, scope.value);
 
         showStatus(
             'success',
-            `✓ 数据已成功写入 ${scope.value === 'scope' ? '局部' : '全局'}变量 "${varNameTrimmed}"`,
+            `✓ 数据已成功写入 ${scope.value === 'scope' ? '沙盒' : '全局'}变量 "${varNameTrimmed}"`,
         );
     } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
@@ -336,7 +532,7 @@ async function handleExport() {
         validateData();
         showStatus(
             'success',
-            `✓ 已导出 ${scope.value === 'scope' ? '局部' : '全局'}变量 "${varNameTrimmed}"`,
+            `✓ 已导出 ${scope.value === 'scope' ? '沙盒' : '全局'}变量 "${varNameTrimmed}"`,
         );
     } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
@@ -347,6 +543,12 @@ async function handleExport() {
 }
 
 function showStatus(type: StatusType, text: string) {
+    if (window.EI?.toast) {
+        window.EI.toast(text);
+        statusMessage.value = null;
+        return;
+    }
+
     statusMessage.value = { type, text };
     setTimeout(() => {
         statusMessage.value = null;
@@ -453,6 +655,13 @@ watch([rawData, format], () => {
     color: #ef4444;
 }
 
+.importer-hint {
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--ei-muted-fg, #6b7280);
+    white-space: pre-line;
+}
+
 .importer-success {
     margin-top: 0.5rem;
     font-size: 0.875rem;
@@ -463,13 +672,7 @@ watch([rawData, format], () => {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.importer-scope {
-    display: flex;
-    gap: 1rem;
-    padding-top: 0.5rem;
+    margin-bottom: 1rem;
 }
 
 .importer-buttons {
@@ -478,14 +681,16 @@ watch([rawData, format], () => {
 }
 
 .importer-btn {
-    min-height: 2.75rem;
+    min-height: 2rem;
     padding: 0.625rem 1rem;
     border-radius: 0.375rem;
-    border: 1px solid transparent;
+    border: none;
     font-weight: 500;
     font-size: 0.875rem;
     line-height: 1.2;
     cursor: pointer;
+    background-color: var(--ei-primary, #3b82f6);
+    color: var(--ei-primary-fg, #ffffff);
     transition:
         opacity 0.2s,
         background-color 0.2s,
@@ -498,14 +703,7 @@ watch([rawData, format], () => {
     cursor: not-allowed;
 }
 
-.importer-btn-primary {
-    flex: 1;
-    background-color: var(--ei-primary, #3b82f6);
-    color: var(--ei-primary-fg, #ffffff);
-    border-color: var(--ei-primary, #3b82f6);
-}
-
-.importer-btn-primary:hover:not(:disabled) {
+.importer-btn:hover:not(:disabled) {
     opacity: 0.88;
 }
 
@@ -513,10 +711,6 @@ watch([rawData, format], () => {
     background-color: var(--ei-muted, #f3f4f6);
     color: var(--ei-muted-fg, #6b7280);
     border-color: var(--ei-border, #e5e7eb);
-}
-
-.importer-btn-secondary:hover:not(:disabled) {
-    background-color: color-mix(in srgb, var(--ei-muted, #f3f4f6) 82%, var(--ei-fg, #000000) 18%);
 }
 
 .importer-message {
