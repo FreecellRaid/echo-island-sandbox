@@ -1,11 +1,7 @@
 <template>
     <section class="demo-panel">
         <p class="eyebrow">Cursor Mask Test</p>
-        <h1>自定义光标遮罩测试场景</h1>
-        <p class="summary">
-            光标资源来自 `变量.cursor`，尺寸来自 `变量.config`。只有当前 cursor
-            类型存在资源时，才会隐藏系统光标并显示遮罩。
-        </p>
+        <h1>自定义光标测试</h1>
 
         <div class="demo-grid">
             <button type="button" class="demo-card pointer-card">
@@ -15,7 +11,7 @@
 
             <label class="demo-card text-card">
                 <span class="card-label">text</span>
-                <input type="text" value="文本输入光标测试" readonly />
+                <input type="text" value="文本输入" readonly />
             </label>
 
             <div class="demo-card crosshair-card">
@@ -25,7 +21,7 @@
 
             <div class="demo-card move-card" tabindex="0">
                 <span class="card-label">move</span>
-                <strong>拖拽区占位</strong>
+                <strong>拖拽光标</strong>
             </div>
 
             <button type="button" class="demo-card grab-card">
@@ -52,13 +48,8 @@
     max-width: 1040px;
     margin: 0 auto;
     padding: 28px;
-    border: 1px solid rgb(148 163 184 / 0.18);
-    border-radius: 28px;
-    background:
-        linear-gradient(180deg, rgb(10 37 64 / 0.72), rgb(11 18 32 / 0.84)),
-        radial-gradient(circle at top left, rgb(34 211 238 / 0.24), transparent 32%);
-    box-shadow: 0 24px 80px rgb(15 23 42 / 0.42);
-    backdrop-filter: blur(18px);
+    background-color: #2b2b2b;
+    color: #fff;
 }
 
 .eyebrow {
@@ -74,14 +65,6 @@ h1 {
     margin: 0;
     font-size: clamp(30px, 4vw, 48px);
     line-height: 1.05;
-}
-
-.summary {
-    max-width: 680px;
-    margin: 16px 0 0;
-    font-size: 15px;
-    line-height: 1.7;
-    color: rgb(226 232 240 / 0.78);
 }
 
 .demo-grid {
@@ -100,8 +83,8 @@ h1 {
     color: inherit;
     text-align: left;
     border: 1px solid rgb(148 163 184 / 0.18);
-    border-radius: 20px;
-    background: linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.02));
+    border-radius: 12px;
+    background-color: #000000;
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 
@@ -128,7 +111,7 @@ input {
 
 .text-card input {
     width: 100%;
-    padding: 14px 16px;
+    padding: 12px 2px;
     color: rgb(226 232 240 / 0.94);
     background: rgb(15 23 42 / 0.42);
     border: 1px solid rgb(148 163 184 / 0.18);

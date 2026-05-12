@@ -1,7 +1,6 @@
 :root {
     color-scheme: light dark;
     font-family: 'SF Pro Display', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-    background: var(--ei-bg, #0f172a);
     color: var(--ei-fg, #e2e8f0);
 }
 
@@ -14,8 +13,5 @@ body,
 }
 
 body {
-    background:
-        radial-gradient(circle at top, rgb(59 130 246 / 0.18), transparent 52%),
-        var(--ei-bg, #0f172a);
     color: var(--ei-fg, #e2e8f0);
 }
