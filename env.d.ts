@@ -19,9 +19,14 @@ interface EchoIslandApi {
     setDesignSize(width: number, height: number): void;
 }
 
+interface EchoIslandMockController {
+    setCurrentSpeaker(speaker: string): void;
+}
+
 declare global {
     interface Window {
         EI?: EchoIslandApi;
+        __EI_MOCK__?: EchoIslandMockController;
     }
 }
 

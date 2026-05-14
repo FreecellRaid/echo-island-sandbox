@@ -86,8 +86,8 @@ export const echoIslandMockConfig: EchoIslandMockConfig = {
         角色: ['张三', '李四'],
     },
     now: {
-        all: ['张三', '李四', '老船长'],
+        all: ['张三', '李四', '老船长', '小水手'],
         players: ['张三', '李四'],
-        npcs: ['老船长'],
+        npcs: ['老船长', '小水手'],
     },
 };

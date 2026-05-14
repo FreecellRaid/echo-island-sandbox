@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import DataTransformer from '@/components/DataTransformer.vue';
+import SpeakerRecorderTestPanel from './components/SpeakerRecorderTestPanel.vue';
 </script>
 
 <template>
-    <DataTransformer />
+    <SpeakerRecorderTestPanel />
 </template>

@@ -38,7 +38,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { createEiAssignThrottle } from '../utils/eiRateLimit';
+import { createEiAssignThrottle } from '@/utils/eiRateLimit';
 
 const counter = ref(0);
 const channelName = ref('未连接');

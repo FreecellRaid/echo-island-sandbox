@@ -287,6 +287,12 @@ export function installEchoIslandMock() {
     };
 
     window.EI = echoIslandApi;
+    window.__EI_MOCK__ = {
+        setCurrentSpeaker(speaker: string) {
+            currentVariables.发言者 = speaker;
+            notify('当前.发言者', 'scope');
+        },
+    };
 
     queueMicrotask(() => {
         resolveReady();

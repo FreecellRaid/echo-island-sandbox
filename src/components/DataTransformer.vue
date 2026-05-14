@@ -72,7 +72,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { createEiAssignThrottle } from '../utils/eiRateLimit';
+import { createEiAssignThrottle } from '@/utils/eiRateLimit';
 
 type Format = 'json' | 'csv';
 type Scope = 'scope' | 'db';
