@@ -86,7 +86,7 @@ export function useSpeakerRecorder() {
 
     async function syncGlobalRows() {
         const rows = buildSpeakerTable(allSpeakers.value, playerSpeakers.value, npcSpeakers.value);
-        await assignSpeakerRows('发言人', rows, 'db');
+        await assignSpeakerRows('发言人', rows, 'scope');
     }
 
     async function handleSpeakerChange(nextValue: unknown) {
@@ -132,7 +132,7 @@ export function useSpeakerRecorder() {
                 (value) => {
                     globalRows.value = normalizeSpeakerTable(value);
                 },
-                'db',
+                'scope',
             ),
         );
 
