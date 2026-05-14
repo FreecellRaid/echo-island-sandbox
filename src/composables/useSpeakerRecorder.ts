@@ -5,8 +5,8 @@ const STACK_LIMIT = 10;
 const EMPTY_SPEAKER = '??';
 
 type SpeakerTableRow = {
-    全部: string;
-    玩家: string;
+    all: string;
+    pl: string;
     npc: string;
 };
 
@@ -31,8 +31,8 @@ function buildSpeakerTable(
     npcStack: string[],
 ): SpeakerTableRow[] {
     return Array.from({ length: STACK_LIMIT }, (_value, index) => ({
-        全部: allStack[index] ?? EMPTY_SPEAKER,
-        玩家: playerStack[index] ?? EMPTY_SPEAKER,
+        all: allStack[index] ?? EMPTY_SPEAKER,
+        pl: playerStack[index] ?? EMPTY_SPEAKER,
         npc: npcStack[index] ?? EMPTY_SPEAKER,
     }));
 }
@@ -46,18 +46,16 @@ function normalizeSpeakerTable(value: unknown) {
         const row = value[index];
         if (!row || typeof row !== 'object' || Array.isArray(row)) {
             return {
-                全部: EMPTY_SPEAKER,
-                玩家: EMPTY_SPEAKER,
+                all: EMPTY_SPEAKER,
+                pl: EMPTY_SPEAKER,
                 npc: EMPTY_SPEAKER,
             };
         }
 
         const typedRow = row as Partial<SpeakerTableRow>;
         return {
-            全部:
-                typeof typedRow.全部 === 'string' && typedRow.全部 ? typedRow.全部 : EMPTY_SPEAKER,
-            玩家:
-                typeof typedRow.玩家 === 'string' && typedRow.玩家 ? typedRow.玩家 : EMPTY_SPEAKER,
+            all: typeof typedRow.all === 'string' && typedRow.all ? typedRow.all : EMPTY_SPEAKER,
+            pl: typeof typedRow.pl === 'string' && typedRow.pl ? typedRow.pl : EMPTY_SPEAKER,
             npc: typeof typedRow.npc === 'string' && typedRow.npc ? typedRow.npc : EMPTY_SPEAKER,
         };
     });
@@ -88,7 +86,7 @@ export function useSpeakerRecorder() {
 
     async function syncGlobalRows() {
         const rows = buildSpeakerTable(allSpeakers.value, playerSpeakers.value, npcSpeakers.value);
-        await assignSpeakerRows('发言者', rows, 'db');
+        await assignSpeakerRows('发言人', rows, 'db');
     }
 
     async function handleSpeakerChange(nextValue: unknown) {
@@ -130,7 +128,7 @@ export function useSpeakerRecorder() {
 
         unsubscribeFns.push(
             ei.subscribe(
-                '发言者',
+                '发言人',
                 (value) => {
                     globalRows.value = normalizeSpeakerTable(value);
                 },

@@ -5,7 +5,7 @@
                 <p class="eyebrow">Speaker Recorder</p>
                 <h1>发言者记录器联调面板</h1>
                 <p class="summary">
-                    订阅 `当前.发言者`，维护长度为 10 的发言者栈，并同步 `全局.发言者`。
+                    订阅 `当前.发言者`，维护长度为 10 的发言者栈，并同步 `全局.发言人`。
                 </p>
             </div>
 
@@ -78,7 +78,7 @@
 
             <article class="panel-card">
                 <header class="panel-header">
-                    <h2>全局.发言者</h2>
+                    <h2>全局.发言人</h2>
                 </header>
                 <div class="table-shell">
                     <table>
@@ -93,8 +93,8 @@
                         <tbody>
                             <tr v-for="(row, index) in globalRows" :key="`row-${index}`">
                                 <td>{{ index + 1 }}</td>
-                                <td>{{ row.全部 }}</td>
-                                <td>{{ row.玩家 }}</td>
+                                <td>{{ row.all }}</td>
+                                <td>{{ row.pl }}</td>
                                 <td>{{ row.npc }}</td>
                             </tr>
                         </tbody>

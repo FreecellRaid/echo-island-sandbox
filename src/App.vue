@@ -1,7 +1,3 @@
-<script setup lang="ts">
-import SpeakerRecorderTestPanel from './components/SpeakerRecorderTestPanel.vue';
-</script>
+<template></template>
 
-<template>
-    <SpeakerRecorderTestPanel />
-</template>
+<script setup lang="ts"></script>
