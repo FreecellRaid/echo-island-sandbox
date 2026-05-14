@@ -37,6 +37,7 @@ function buildSpeakerTable(
     }));
 }
 
+// 避免非法值，重制变量
 function normalizeSpeakerTable(value: unknown) {
     if (!Array.isArray(value)) {
         return buildSpeakerTable([], [], []);
@@ -104,6 +105,7 @@ export function useSpeakerRecorder() {
         lastHandledSpeaker.value = speaker;
         currentSpeaker.value = speaker;
 
+        // 为了保存没有人物卡的GM, all不依赖 EI.now，
         pushSpeaker(allSpeakers.value, speaker);
 
         if (ei.now.players.includes(speaker)) {
@@ -130,6 +132,7 @@ export function useSpeakerRecorder() {
             ei.subscribe(
                 '发言人',
                 (value) => {
+                    // 测试 UI 展示的是实际的变量，不直接复用内部栈
                     globalRows.value = normalizeSpeakerTable(value);
                 },
                 'scope',
