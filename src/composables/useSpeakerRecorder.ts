@@ -38,8 +38,8 @@ function buildSpeakerTable(
 }
 
 // 避免非法值，重制变量
-function normalizeSpeakerTable(value: unknown) {
-    if (!Array.isArray(value)) {
+function normalizeSpeakerTable(value: unknown): SpeakerTableRow[] {
+    if (!value || !Array.isArray(value)) {
         return buildSpeakerTable([], [], []);
     }
 
@@ -67,9 +67,12 @@ export function useSpeakerRecorder() {
     const currentSpeaker = ref(EMPTY_SPEAKER);
     const currentViewer = ref(EMPTY_SPEAKER);
     const lastHandledSpeaker = ref('');
+
+    // 这三个栈现在作为组件本地 UI 的纯粹展示（只由线上同步过来的数据驱动）
     const allSpeakers = ref<string[]>([]);
     const playerSpeakers = ref<string[]>([]);
     const npcSpeakers = ref<string[]>([]);
+
     const globalRows = ref<SpeakerTableRow[]>(buildSpeakerTable([], [], []));
     const unsubscribeFns: Array<() => void> = [];
     const assignSpeakerRows = createEiAssignThrottle(1000, {
@@ -86,6 +89,7 @@ export function useSpeakerRecorder() {
         }
     }
 
+    // 仅本次发言者对应的观看者可写
     function canWriteSpeakerRecord(speaker: string, ei: NonNullable<Window['EI']>) {
         const viewer = currentViewer.value;
         if (!viewer || viewer === EMPTY_SPEAKER) {
@@ -99,8 +103,8 @@ export function useSpeakerRecorder() {
         return viewer === 'GM';
     }
 
-    async function syncGlobalRows() {
-        const rows = buildSpeakerTable(allSpeakers.value, playerSpeakers.value, npcSpeakers.value);
+    async function syncGlobalRows(all: string[], pl: string[], npc: string[]) {
+        const rows = buildSpeakerTable(all, pl, npc);
         await assignSpeakerRows('发言人', rows, 'scope');
     }
 
@@ -119,20 +123,30 @@ export function useSpeakerRecorder() {
         lastHandledSpeaker.value = speaker;
         currentSpeaker.value = speaker;
 
-        // 为了保存没有人物卡的GM, all不依赖 EI.now，
-        pushSpeaker(allSpeakers.value, speaker);
-
-        if (ei.now.players.includes(speaker)) {
-            pushSpeaker(playerSpeakers.value, speaker);
-        } else if (ei.now.npcs.includes(speaker)) {
-            pushSpeaker(npcSpeakers.value, speaker);
-        }
-
+        // 非负责人只更新本地高亮，不写入
         if (!canWriteSpeakerRecord(speaker, ei)) {
             return;
         }
 
-        await syncGlobalRows();
+        // 写之前先读最新的服务器数据
+        const rawOnlineRows = await ei.read('发言人', 'scope');
+        const onlineRows = normalizeSpeakerTable(rawOnlineRows);
+
+        const activeAll = onlineRows.map((r) => r.all).filter((x) => x && x !== EMPTY_SPEAKER);
+        const activePl = onlineRows.map((r) => r.pl).filter((x) => x && x !== EMPTY_SPEAKER);
+        const activeNpc = onlineRows.map((r) => r.npc).filter((x) => x && x !== EMPTY_SPEAKER);
+
+        // 兼容无卡的 gm ,All的写入不依赖ei.now
+        pushSpeaker(activeAll, speaker);
+
+        if (ei.now.players.includes(speaker)) {
+            pushSpeaker(activePl, speaker);
+        } else if (ei.now.npcs.includes(speaker)) {
+            pushSpeaker(activeNpc, speaker);
+        }
+
+        // 同步回服务器
+        await syncGlobalRows(activeAll, activePl, activeNpc);
     }
 
     onMounted(async () => {
@@ -144,26 +158,33 @@ export function useSpeakerRecorder() {
 
         await ei.ready;
         status.value = 'ready';
-        globalRows.value = buildSpeakerTable([], [], []);
+
+        // 静态获取一次，不监听变动，防止发言者首次赋值快于观看者导致写入失败
         currentViewer.value = normalizeSpeaker(await ei.parse('${当前.观看者}')) || EMPTY_SPEAKER;
 
         unsubscribeFns.push(
             ei.subscribe(
                 '发言人',
                 (value) => {
-                    // 测试 UI 展示的是实际的变量，不直接复用内部栈
-                    globalRows.value = normalizeSpeakerTable(value);
+                    const parsedRows = normalizeSpeakerTable(value);
+                    globalRows.value = parsedRows;
+
+                    // 用服务器返回的数据，把本地展示用的栈刷一遍
+                    allSpeakers.value = parsedRows
+                        .map((r) => r.all)
+                        .filter((x) => x && x !== EMPTY_SPEAKER);
+                    playerSpeakers.value = parsedRows
+                        .map((r) => r.pl)
+                        .filter((x) => x && x !== EMPTY_SPEAKER);
+                    npcSpeakers.value = parsedRows
+                        .map((r) => r.npc)
+                        .filter((x) => x && x !== EMPTY_SPEAKER);
                 },
                 'scope',
             ),
         );
 
-        unsubscribeFns.push(
-            ei.subscribe('当前.观看者', (value) => {
-                currentViewer.value = normalizeSpeaker(value) || EMPTY_SPEAKER;
-            }),
-        );
-
+        // 监听发言人
         unsubscribeFns.push(
             ei.subscribe('当前.发言者', (value) => {
                 void handleSpeakerChange(value);

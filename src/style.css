@@ -4,7 +4,7 @@
     color: var(--ei-fg, #e2e8f0);
 }
 
-/* html,
+html,
 body,
 #app {
     width: 100%;
@@ -14,9 +14,9 @@ body,
 
 body {
     color: var(--ei-fg, #e2e8f0);
-} */
+}
 
-body {
+/* body {
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -31,4 +31,4 @@ body {
     display: flex;
     align-items: center;
     gap: 24px;
-}
+} */
