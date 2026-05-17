@@ -21,6 +21,7 @@ interface EchoIslandApi {
 
 interface EchoIslandMockController {
     setCurrentSpeaker(speaker: string): void;
+    setCurrentViewer(viewer: string): void;
 }
 
 declare global {

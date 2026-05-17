@@ -5,7 +5,7 @@
                 <p class="eyebrow">Speaker Recorder</p>
                 <h1>发言者记录器联调面板</h1>
                 <p class="summary">
-                    订阅 `当前.发言者`，维护长度为 10 的发言者栈，并同步 `全局.发言人`。
+                    订阅 `当前.发言者`，维护长度为 10 的发言者栈，并同步 `全局.发言者`。
                 </p>
             </div>
 
@@ -19,23 +19,44 @@
                     <dd>{{ currentSpeaker }}</dd>
                 </div>
                 <div class="meta-item">
+                    <dt>当前观看者</dt>
+                    <dd>{{ currentViewer }}</dd>
+                </div>
+                <div class="meta-item">
                     <dt>全部栈深度</dt>
                     <dd>{{ stackDepth }}/10</dd>
                 </div>
             </dl>
 
-            <div v-if="mockSpeakers.length > 0" class="simulator">
+            <div v-if="mockSpeakers.length > 0 || mockViewers.length > 0" class="simulator">
                 <span class="simulator-label">Mock 切换</span>
-                <div class="simulator-actions">
-                    <button
-                        v-for="speaker in mockSpeakers"
-                        :key="speaker"
-                        type="button"
-                        class="simulator-button"
-                        @click="setMockSpeaker(speaker)"
-                    >
-                        {{ speaker }}
-                    </button>
+                <div v-if="mockViewers.length > 0" class="simulator-block">
+                    <span class="simulator-subtitle">观看者</span>
+                    <div class="simulator-actions">
+                        <button
+                            v-for="viewer in mockViewers"
+                            :key="viewer"
+                            type="button"
+                            class="simulator-button simulator-button-secondary"
+                            @click="setMockViewer(viewer)"
+                        >
+                            {{ viewer }}
+                        </button>
+                    </div>
+                </div>
+                <div class="simulator-block">
+                    <span class="simulator-subtitle">发言者</span>
+                    <div class="simulator-actions">
+                        <button
+                            v-for="speaker in mockSpeakers"
+                            :key="speaker"
+                            type="button"
+                            class="simulator-button"
+                            @click="setMockSpeaker(speaker)"
+                        >
+                            {{ speaker }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -109,8 +130,16 @@
 import { computed } from 'vue';
 import { useSpeakerRecorder } from '@/composables/useSpeakerRecorder';
 
-const { allSpeakers, currentSpeaker, globalRows, npcSpeakers, playerSpeakers, stackDepth, status } =
-    useSpeakerRecorder();
+const {
+    allSpeakers,
+    currentSpeaker,
+    currentViewer,
+    globalRows,
+    npcSpeakers,
+    playerSpeakers,
+    stackDepth,
+    status,
+} = useSpeakerRecorder();
 
 const EMPTY_SPEAKER = '??';
 const STACK_LIMIT = 10;
@@ -140,8 +169,17 @@ const mockSpeakers = computed(() => {
     return [...speakerList, '神秘人'];
 });
 
+const mockViewers = computed(() => {
+    const players = window.EI?.now.players ?? [];
+    return [...players, 'GM'];
+});
+
 function setMockSpeaker(speaker: string) {
     window.__EI_MOCK__?.setCurrentSpeaker(speaker);
+}
+
+function setMockViewer(viewer: string) {
+    window.__EI_MOCK__?.setCurrentViewer(viewer);
 }
 </script>
 
@@ -202,7 +240,7 @@ h1 {
 
 .meta-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 14px;
     margin: 0;
 }
@@ -246,6 +284,16 @@ dd {
     color: rgb(253 224 71 / 0.82);
 }
 
+.simulator-block {
+    display: grid;
+    gap: 10px;
+}
+
+.simulator-subtitle {
+    font-size: 13px;
+    color: rgb(226 232 240 / 0.7);
+}
+
 .simulator-actions {
     display: flex;
     flex-wrap: wrap;
@@ -270,6 +318,11 @@ dd {
 .simulator-button:hover {
     transform: translateY(-1px);
     filter: brightness(1.06);
+}
+
+.simulator-button-secondary {
+    background: linear-gradient(135deg, rgb(56 189 248), rgb(59 130 246));
+    color: rgb(8 15 28);
 }
 
 .content-grid {

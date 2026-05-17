@@ -292,6 +292,10 @@ export function installEchoIslandMock() {
             currentVariables.发言者 = speaker;
             notify('当前.发言者', 'scope');
         },
+        setCurrentViewer(viewer: string) {
+            currentVariables.观看者 = viewer;
+            notify('当前.观看者', 'scope');
+        },
     };
 
     queueMicrotask(() => {

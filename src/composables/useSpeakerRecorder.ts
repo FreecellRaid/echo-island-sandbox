@@ -65,6 +65,7 @@ function normalizeSpeakerTable(value: unknown) {
 export function useSpeakerRecorder() {
     const status = ref<'idle' | 'ready' | 'missing-ei'>('idle');
     const currentSpeaker = ref(EMPTY_SPEAKER);
+    const currentViewer = ref(EMPTY_SPEAKER);
     const lastHandledSpeaker = ref('');
     const allSpeakers = ref<string[]>([]);
     const playerSpeakers = ref<string[]>([]);
@@ -83,6 +84,19 @@ export function useSpeakerRecorder() {
         while (unsubscribeFns.length > 0) {
             unsubscribeFns.pop()?.();
         }
+    }
+
+    function canWriteSpeakerRecord(speaker: string, ei: NonNullable<Window['EI']>) {
+        const viewer = currentViewer.value;
+        if (!viewer || viewer === EMPTY_SPEAKER) {
+            return false;
+        }
+
+        if (ei.now.players.includes(speaker)) {
+            return speaker === viewer;
+        }
+
+        return viewer === 'GM';
     }
 
     async function syncGlobalRows() {
@@ -114,6 +128,10 @@ export function useSpeakerRecorder() {
             pushSpeaker(npcSpeakers.value, speaker);
         }
 
+        if (!canWriteSpeakerRecord(speaker, ei)) {
+            return;
+        }
+
         await syncGlobalRows();
     }
 
@@ -127,6 +145,7 @@ export function useSpeakerRecorder() {
         await ei.ready;
         status.value = 'ready';
         globalRows.value = buildSpeakerTable([], [], []);
+        currentViewer.value = normalizeSpeaker(await ei.parse('${当前.观看者}')) || EMPTY_SPEAKER;
 
         unsubscribeFns.push(
             ei.subscribe(
@@ -137,6 +156,12 @@ export function useSpeakerRecorder() {
                 },
                 'scope',
             ),
+        );
+
+        unsubscribeFns.push(
+            ei.subscribe('当前.观看者', (value) => {
+                currentViewer.value = normalizeSpeaker(value) || EMPTY_SPEAKER;
+            }),
         );
 
         unsubscribeFns.push(
@@ -153,6 +178,7 @@ export function useSpeakerRecorder() {
     return {
         allSpeakers,
         currentSpeaker,
+        currentViewer,
         globalRows,
         npcSpeakers,
         playerSpeakers,
