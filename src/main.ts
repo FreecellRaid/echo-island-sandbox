@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
 import App from './App.vue';
+import './style.css';
 
 function mountApp() {
     const mountTarget = document.getElementById('app');

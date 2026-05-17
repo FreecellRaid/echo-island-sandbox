@@ -1,17 +1,22 @@
 type Scope = 'scope' | 'db';
-type ToastableEi = Pick<NonNullable<Window['EI']>, 'assign' | 'msg' | 'toast'>;
-type EiGetter = () => ToastableEi | undefined;
+type GuardableEi = Pick<NonNullable<Window['EI']>, 'assign' | 'msg' | 'toast' | 'parse'>;
+type EiGetter = () => GuardableEi | undefined;
 type AsyncVoid = Promise<void>;
 
 interface RateLimitMessages {
     missingEi?: string;
     scheduled?: string;
     replaced?: string;
+    gmOnly?: string;
 }
 
 interface RateLimitOptions {
     getEi?: EiGetter;
     messages?: RateLimitMessages;
+}
+
+interface GmLockOptions extends RateLimitOptions {
+    gmName?: string;
 }
 
 interface Deferred {
@@ -59,7 +64,7 @@ function flushDeferredQueue(queue: Deferred[], error?: unknown) {
 function runEiTask<TArgs extends unknown[]>(
     getEi: EiGetter,
     messages: RateLimitMessages | undefined,
-    task: (ei: ToastableEi, args: TArgs) => AsyncVoid,
+    task: (ei: GuardableEi, args: TArgs) => AsyncVoid,
     args: TArgs,
 ) {
     const ei = getEi();
@@ -71,8 +76,41 @@ function runEiTask<TArgs extends unknown[]>(
     return task(ei, args);
 }
 
+export function withEiGmLock<TArgs extends unknown[]>(
+    task: (ei: GuardableEi, args: TArgs) => AsyncVoid,
+    options: GmLockOptions = {},
+) {
+    return async (ei: GuardableEi, args: TArgs) => {
+        const viewer = await ei.parse('${当前.观看者}');
+        const gmName = options.gmName ?? 'GM';
+        const isGmViewer = typeof viewer === 'string' && viewer.trim() === gmName;
+
+        if (!isGmViewer) {
+            const message = options.messages?.gmOnly;
+            if (message) {
+                ei.toast(message);
+            }
+            return;
+        }
+
+        await task(ei, args);
+    };
+}
+
+export function createEiGmGuard<TArgs extends unknown[]>(
+    task: (ei: GuardableEi, args: TArgs) => AsyncVoid,
+    options: GmLockOptions = {},
+) {
+    const getEi = options.getEi ?? (() => window.EI);
+    const guardedTask = withEiGmLock(task, options);
+
+    const run: Runner<TArgs> = (...args) => runEiTask(getEi, options.messages, guardedTask, args);
+
+    return run;
+}
+
 export function createEiDebounce<TArgs extends unknown[]>(
-    task: (ei: ToastableEi, args: TArgs) => AsyncVoid,
+    task: (ei: GuardableEi, args: TArgs) => AsyncVoid,
     waitMs = 1000,
     options: RateLimitOptions = {},
 ) {
@@ -121,7 +159,7 @@ export function createEiDebounce<TArgs extends unknown[]>(
 }
 
 export function createEiThrottle<TArgs extends unknown[]>(
-    task: (ei: ToastableEi, args: TArgs) => AsyncVoid,
+    task: (ei: GuardableEi, args: TArgs) => AsyncVoid,
     waitMs = 1000,
     options: RateLimitOptions = {},
 ) {
@@ -211,6 +249,38 @@ export function createEiAssignThrottle(waitMs = 1000, options: RateLimitOptions 
     );
 }
 
+export function createEiAssignDebounceByGm(waitMs = 1000, options: GmLockOptions = {}) {
+    return createEiDebounce<[path: string, value: unknown, scope?: Scope]>(
+        withEiGmLock((ei, [path, value, scope]) => ei.assign(path, value, scope), options),
+        waitMs,
+        {
+            ...options,
+            messages: {
+                scheduled: '写入已进入防抖队列。',
+                replaced: '连续写入已合并为最后一次结果。',
+                gmOnly: '仅 GM 可写入该变量。',
+                ...options.messages,
+            },
+        },
+    );
+}
+
+export function createEiAssignThrottleByGm(waitMs = 1000, options: GmLockOptions = {}) {
+    return createEiThrottle<[path: string, value: unknown, scope?: Scope]>(
+        withEiGmLock((ei, [path, value, scope]) => ei.assign(path, value, scope), options),
+        waitMs,
+        {
+            ...options,
+            messages: {
+                scheduled: '写入过快，已排队等待下一次写入。',
+                replaced: '排队中的写入已更新为最新值。',
+                gmOnly: '仅 GM 可写入该变量。',
+                ...options.messages,
+            },
+        },
+    );
+}
+
 export function createEiMsgDebounce(waitMs = 1000, options: RateLimitOptions = {}) {
     return createEiDebounce<[text: string]>(
         async (ei, [text]) => {
@@ -239,6 +309,42 @@ export function createEiMsgThrottle(waitMs = 1000, options: RateLimitOptions = {
             messages: {
                 scheduled: '消息发送过快，已排队等待发送。',
                 replaced: '排队中的消息已更新为最新内容。',
+                ...options.messages,
+            },
+        },
+    );
+}
+
+export function createEiMsgDebounceByGm(waitMs = 1000, options: GmLockOptions = {}) {
+    return createEiDebounce<[text: string]>(
+        withEiGmLock(async (ei, [text]) => {
+            ei.msg(text);
+        }, options),
+        waitMs,
+        {
+            ...options,
+            messages: {
+                scheduled: '消息已进入防抖队列。',
+                replaced: '连续消息已合并为最后一条。',
+                gmOnly: '仅 GM 可发送该消息。',
+                ...options.messages,
+            },
+        },
+    );
+}
+
+export function createEiMsgThrottleByGm(waitMs = 1000, options: GmLockOptions = {}) {
+    return createEiThrottle<[text: string]>(
+        withEiGmLock(async (ei, [text]) => {
+            ei.msg(text);
+        }, options),
+        waitMs,
+        {
+            ...options,
+            messages: {
+                scheduled: '消息发送过快，已排队等待发送。',
+                replaced: '排队中的消息已更新为最新内容。',
+                gmOnly: '仅 GM 可发送该消息。',
                 ...options.messages,
             },
         },
