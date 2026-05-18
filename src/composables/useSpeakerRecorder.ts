@@ -18,8 +18,11 @@ function normalizeSpeaker(value: unknown) {
     return value.trim();
 }
 
-function pushSpeaker(stack: string[], speaker: string) {
-    stack.unshift(speaker);
+function insertSpeakerDeduped(stack: string[], speaker: string) {
+    const nextStack = stack.filter((item) => item !== speaker);
+    nextStack.unshift(speaker);
+    stack.splice(0, stack.length, ...nextStack);
+
     if (stack.length > STACK_LIMIT) {
         stack.length = STACK_LIMIT;
     }
@@ -89,6 +92,13 @@ export function useSpeakerRecorder() {
         }
     }
 
+    function applyRowsToLocalState(rows: SpeakerTableRow[]) {
+        globalRows.value = rows;
+        allSpeakers.value = rows.map((row) => row.all).filter((value) => value && value !== EMPTY_SPEAKER);
+        playerSpeakers.value = rows.map((row) => row.pl).filter((value) => value && value !== EMPTY_SPEAKER);
+        npcSpeakers.value = rows.map((row) => row.npc).filter((value) => value && value !== EMPTY_SPEAKER);
+    }
+
     // 仅本次发言者对应的观看者可写
     function canWriteSpeakerRecord(speaker: string, ei: NonNullable<Window['EI']>) {
         const viewer = currentViewer.value;
@@ -103,9 +113,19 @@ export function useSpeakerRecorder() {
         return viewer === 'GM';
     }
 
-    async function syncGlobalRows(all: string[], pl: string[], npc: string[]) {
-        const rows = buildSpeakerTable(all, pl, npc);
-        await assignSpeakerRows('发言人', rows, 'scope');
+    async function syncGlobalRows(previousRows: SpeakerTableRow[], nextRows: SpeakerTableRow[]) {
+        const hasChanges = nextRows.some(
+            (row, index) =>
+                row.all !== previousRows[index]?.all ||
+                row.pl !== previousRows[index]?.pl ||
+                row.npc !== previousRows[index]?.npc,
+        );
+
+        if (!hasChanges) {
+            return;
+        }
+
+        await assignSpeakerRows('发言人', nextRows, 'scope');
     }
 
     async function handleSpeakerChange(nextValue: unknown) {
@@ -137,16 +157,18 @@ export function useSpeakerRecorder() {
         const activeNpc = onlineRows.map((r) => r.npc).filter((x) => x && x !== EMPTY_SPEAKER);
 
         // 兼容无卡的 gm ,All的写入不依赖ei.now
-        pushSpeaker(activeAll, speaker);
+        insertSpeakerDeduped(activeAll, speaker);
 
         if (ei.now.players.includes(speaker)) {
-            pushSpeaker(activePl, speaker);
+            insertSpeakerDeduped(activePl, speaker);
         } else if (ei.now.npcs.includes(speaker)) {
-            pushSpeaker(activeNpc, speaker);
+            insertSpeakerDeduped(activeNpc, speaker);
         }
 
-        // 同步回服务器
-        await syncGlobalRows(activeAll, activePl, activeNpc);
+        const nextRows = buildSpeakerTable(activeAll, activePl, activeNpc);
+
+        // 单次整表写回，避免拆成多次 assign 撞上 throttle
+        await syncGlobalRows(onlineRows, nextRows);
     }
 
     onMounted(async () => {
@@ -167,18 +189,7 @@ export function useSpeakerRecorder() {
                 '发言人',
                 (value) => {
                     const parsedRows = normalizeSpeakerTable(value);
-                    globalRows.value = parsedRows;
-
-                    // 用服务器返回的数据，把本地展示用的栈刷一遍
-                    allSpeakers.value = parsedRows
-                        .map((r) => r.all)
-                        .filter((x) => x && x !== EMPTY_SPEAKER);
-                    playerSpeakers.value = parsedRows
-                        .map((r) => r.pl)
-                        .filter((x) => x && x !== EMPTY_SPEAKER);
-                    npcSpeakers.value = parsedRows
-                        .map((r) => r.npc)
-                        .filter((x) => x && x !== EMPTY_SPEAKER);
+                    applyRowsToLocalState(parsedRows);
                 },
                 'scope',
             ),
