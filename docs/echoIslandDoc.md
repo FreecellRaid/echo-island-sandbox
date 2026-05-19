@@ -127,6 +127,9 @@ EI.read(path: string, scope?: 'scope' | 'db'): Promise<any>
 //   - 自定义变量路径（默认读"变量."；scope='db' 时读"全局."）
 //   - 预设变量路径：角色.X.hp / 当前.ch / 骰子.xxx / 计算.xxx
 // 返回 unsubscribe 函数
+// 注意：EI.subscribe 本质上是"全局广播 + 按 path 重新取值"，
+// 所以只要任意非 ${当前} 的变量发生改变，所有 EI.subscribe 都可能触发回调；
+// 如果订阅的 path 实际没变，回调里拿到的会是旧值。业务侧请自行做去重。
 EI.subscribe(path: string, cb: (value) => void, scope?: 'scope' | 'db'): () => void
 // 例 1：订阅自定义变量
 EI.subscribe('计数器', v => console.log('new:', v))
