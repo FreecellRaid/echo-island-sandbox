@@ -582,8 +582,8 @@ watch([rawData, format], () => {
     max-width: 35rem;
     margin: 0 auto;
     padding: 1.5rem;
-    background-color: var(--ei-bg, #ffffff);
-    color: var(--ei-fg, #000000);
+    background-color: var(--ei-bg);
+    color: var(--ei-fg);
 }
 
 .importer-section {
@@ -621,9 +621,9 @@ watch([rawData, format], () => {
     height: 10rem;
     padding: 0.75rem;
     border-radius: 0.375rem;
-    border: 1px solid var(--ei-border, #e5e7eb);
-    background-color: var(--ei-bg, #ffffff);
-    color: var(--ei-fg, #000000);
+    border: 1px solid var(--ei-border);
+    background-color: var(--ei-bg);
+    color: var(--ei-fg);
     font-family: monospace;
     font-size: 0.875rem;
     box-sizing: border-box;
@@ -631,22 +631,22 @@ watch([rawData, format], () => {
 
 .importer-textarea:focus {
     outline: none;
-    box-shadow: 0 0 0 1px var(--ei-primary, #3b82f6);
+    box-shadow: 0 0 0 1px var(--ei-primary);
 }
 
 .importer-input {
     width: 100%;
     padding: 0.5rem 0.75rem;
     border-radius: 0.375rem;
-    border: 1px solid var(--ei-border, #e5e7eb);
-    background-color: var(--ei-bg, #ffffff);
-    color: var(--ei-fg, #000000);
+    border: 1px solid var(--ei-border);
+    background-color: var(--ei-bg);
+    color: var(--ei-fg);
     box-sizing: border-box;
 }
 
 .importer-input:focus {
     outline: none;
-    box-shadow: 0 0 0 1px var(--ei-primary, #3b82f6);
+    box-shadow: 0 0 0 1px var(--ei-primary);
 }
 
 .importer-error {
@@ -658,7 +658,7 @@ watch([rawData, format], () => {
 .importer-hint {
     margin-top: 0.5rem;
     font-size: 0.8125rem;
-    color: var(--ei-muted-fg, #6b7280);
+    color: var(--ei-muted-fg);
     white-space: pre-line;
 }
 
@@ -689,8 +689,8 @@ watch([rawData, format], () => {
     font-size: 0.875rem;
     line-height: 1.2;
     cursor: pointer;
-    background-color: var(--ei-primary, #3b82f6);
-    color: var(--ei-primary-fg, #ffffff);
+    background-color: var(--ei-primary);
+    color: var(--ei-primary-fg);
     transition:
         opacity 0.2s,
         background-color 0.2s,
@@ -708,9 +708,9 @@ watch([rawData, format], () => {
 }
 
 .importer-btn-secondary {
-    background-color: var(--ei-muted, #f3f4f6);
-    color: var(--ei-muted-fg, #6b7280);
-    border-color: var(--ei-border, #e5e7eb);
+    background-color: var(--ei-muted);
+    color: var(--ei-muted-fg);
+    border-color: var(--ei-border);
 }
 
 .importer-message {

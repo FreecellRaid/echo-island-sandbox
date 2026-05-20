@@ -188,11 +188,8 @@ function setMockViewer(viewer: string) {
     box-sizing: border-box;
     min-height: 100%;
     padding: 28px;
-    background:
-        radial-gradient(circle at top left, rgb(245 158 11 / 0.2), transparent 34%),
-        radial-gradient(circle at top right, rgb(14 165 233 / 0.18), transparent 30%),
-        linear-gradient(160deg, rgb(8 15 28), rgb(17 24 39) 52%, rgb(26 32 44));
-    color: var(--ei-fg, #f8fafc);
+    background: var(--ei-bg);
+    color: var(--ei-fg);
 }
 
 .hero-card,
@@ -216,7 +213,7 @@ function setMockViewer(viewer: string) {
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: rgb(125 211 252);
+    color: var(--ei-primary);
 }
 
 h1,

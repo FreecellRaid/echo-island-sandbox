@@ -1,7 +1,6 @@
 :root {
     color-scheme: light dark;
     font-family: 'SF Pro Display', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-    color: var(--ei-fg, #e2e8f0);
 }
 
 html,
@@ -9,26 +8,27 @@ body,
 #app {
     width: 100%;
     height: 100%;
-    margin: 0;
-}
-
-body {
-    color: var(--ei-fg, #e2e8f0);
-}
-
-/* body {
-    margin: 0;
-    padding: 0;
     overflow: hidden;
-    background-color: var(--ei-bg);
-    color: var(--ei-fg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
 }
-#app {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-} */
+
+:root {
+    --ei-bg: #fdfdfd;
+    --ei-fg: #414149;
+    --ei-primary: #18181b;
+    --ei-primary-fg: #fafafa;
+    --ei-muted: #f4f4f5;
+    --ei-muted-fg: #414149;
+    --ei-border: #e4e4e7;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --ei-bg: #1a1a1e;
+        --ei-fg: #fafafa;
+        --ei-primary: #6475f7;
+        --ei-primary-fg: #ffffff;
+        --ei-muted: #27272a;
+        --ei-muted-fg: #a1a1aa;
+        --ei-border: #27272a;
+    }
+}

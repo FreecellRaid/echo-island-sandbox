@@ -48,8 +48,8 @@
     max-width: 1040px;
     margin: 0 auto;
     padding: 28px;
-    background-color: #2b2b2b;
-    color: #fff;
+    background-color: var(--ei-bg);
+    color: var(--ei-fg);
 }
 
 .eyebrow {
@@ -58,7 +58,7 @@
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: rgb(103 232 249 / 0.84);
+    color: var(--ei-primary);
 }
 
 h1 {
@@ -80,12 +80,10 @@ h1 {
     gap: 12px;
     min-height: 150px;
     padding: 20px;
-    color: inherit;
     text-align: left;
-    border: 1px solid rgb(148 163 184 / 0.18);
+    border: 1px solid var(--ei-border);
     border-radius: 12px;
-    background-color: #000000;
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+    background-color: var(--ei-muted);
 }
 
 .demo-card strong {
@@ -97,7 +95,7 @@ h1 {
     font-size: 12px;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: rgb(125 211 252 / 0.86);
+    color: var(--ei-primary);
 }
 
 button.demo-card,
@@ -112,9 +110,7 @@ input {
 .text-card input {
     width: 100%;
     padding: 12px 2px;
-    color: rgb(226 232 240 / 0.94);
-    background: rgb(15 23 42 / 0.42);
-    border: 1px solid rgb(148 163 184 / 0.18);
+    background: var(--ei-bg);
     border-radius: 14px;
     cursor: text;
 }
@@ -128,10 +124,10 @@ input {
     position: relative;
     min-height: 84px;
     border-radius: 18px;
-    border: 1px dashed rgb(103 232 249 / 0.38);
+    border: 1px dashed var(--ei-primary);
     background:
-        linear-gradient(90deg, transparent 49%, rgb(103 232 249 / 0.3) 50%, transparent 51%),
-        linear-gradient(transparent 49%, rgb(103 232 249 / 0.3) 50%, transparent 51%);
+        linear-gradient(90deg, transparent 49%, var(--ei-primary) 50%, transparent 51%),
+        linear-gradient(transparent 49%, var(--ei-primary) 50%, transparent 51%);
 }
 
 .move-card {
