@@ -2,13 +2,14 @@
 
 （大概是为了方便岛主review）
 
-使用时把需要的 component/composable 挂在根组件上再 build / dev，打包时会自动排除 vue3 runtime 和 mock，因为我不习惯，没装tailwind，如果要用需要自己配一下
+使用时把需要的 component/composable 挂在根组件上再 build ，打包时会自动排除 vue3 runtime 和 mock，因为我不习惯，没装tailwind，如果要用需要自己配一下
 
 `mocks/` 回声岛接口本地模拟，可以在`mockVariables.ts`中配置变量数值
 
 `eiRateLimit.ts` 基础的节流/防抖/GM锁
+`eiSubscribe.ts` 对EI.subscribe接口的去重包装
 
-`EchoIslandTestCard.vue` 环境测试
+`ApiTestPanel.vue` 测试用面板
 
 `useSpeakerRecorder.ts` 发言顺序记录  
 `SpeakerRecorderTestPanel.vue` 发言顺序记录测试面板
