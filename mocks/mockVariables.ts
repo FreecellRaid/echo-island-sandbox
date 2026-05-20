@@ -51,7 +51,7 @@ export const echoIslandMockConfig: EchoIslandMockConfig = {
                 resource: 'https://api.iconify.design/lucide/ban.svg?color=%23fff',
             },
         ],
-        config: [
+        cursorConfig: [
             {
                 width: 28,
                 height: 28,

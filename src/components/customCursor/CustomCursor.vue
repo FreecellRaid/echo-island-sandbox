@@ -147,7 +147,7 @@ function syncCursorVariables() {
     const localVariables = window.EI?.localVariables as
         | {
               cursor?: unknown;
-              config?: unknown;
+              cursorConfig?: unknown;
           }
         | undefined;
 
@@ -161,7 +161,9 @@ function syncCursorVariables() {
           ) as CursorRow[])
         : [];
 
-    const configRow = Array.isArray(localVariables?.config) ? localVariables.config[0] : undefined;
+    const configRow = Array.isArray(localVariables?.cursorConfig)
+        ? localVariables.cursorConfig[0]
+        : undefined;
     cursorConfig.value = {
         width:
             typeof (configRow as CursorConfigRow | undefined)?.width === 'number'
