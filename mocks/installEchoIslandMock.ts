@@ -184,6 +184,7 @@ export function installEchoIslandMock() {
     const globalVariables = deepClone(echoIslandMockConfig.globalVariables);
     const roleVariables = deepClone(echoIslandMockConfig.roles);
     const currentVariables = deepClone(echoIslandMockConfig.current);
+    let currentTheme: 'light' | 'dark' = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
     const subscribers = new Map<string, Set<Subscriber>>();
     const { ready, resolveReady } = createDeferred();
 
@@ -229,6 +230,9 @@ export function installEchoIslandMock() {
         ready,
         localVariables,
         globalVariables,
+        get theme() {
+            return currentTheme;
+        },
         now: deepClone(echoIslandMockConfig.now),
         onReady(fn: () => void) {
             ready.then(fn);
@@ -295,6 +299,10 @@ export function installEchoIslandMock() {
         setCurrentViewer(viewer: string) {
             currentVariables.观看者 = viewer;
             notify('当前.观看者', 'scope');
+        },
+        setTheme(theme: 'light' | 'dark') {
+            currentTheme = theme;
+            document.documentElement.classList.toggle('dark', theme === 'dark');
         },
     };
 

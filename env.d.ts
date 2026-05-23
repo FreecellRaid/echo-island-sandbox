@@ -4,6 +4,7 @@ interface EchoIslandApi {
     ready: Promise<void>;
     localVariables: Record<string, unknown>;
     globalVariables: Record<string, unknown>;
+    theme: 'light' | 'dark';
     now: {
         all: string[];
         players: string[];
@@ -22,6 +23,7 @@ interface EchoIslandApi {
 interface EchoIslandMockController {
     setCurrentSpeaker(speaker: string): void;
     setCurrentViewer(viewer: string): void;
+    setTheme(theme: 'light' | 'dark'): void;
 }
 
 declare global {
