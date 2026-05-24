@@ -71,18 +71,14 @@ export function useSpeakerRecorder() {
     const currentViewer = ref(EMPTY_SPEAKER);
     const lastHandledSpeaker = ref('');
 
-    // 这三个栈现在作为组件本地 UI 的纯粹展示（只由线上同步过来的数据驱动）
+    // 这三个队列现在作为组件本地 UI 的纯粹展示（只由线上同步过来的数据驱动）
     const allSpeakers = ref<string[]>([]);
     const playerSpeakers = ref<string[]>([]);
     const npcSpeakers = ref<string[]>([]);
 
     const globalRows = ref<SpeakerTableRow[]>(buildSpeakerTable([], [], []));
     const unsubscribeFns: Array<() => void> = [];
-    const assignSpeakerRows = createEiAssignThrottle(1000, {
-        messages: {
-            missingEi: 'EI 未连接，无法同步发言者记录。',
-        },
-    });
+    const assignSpeakerRows = createEiAssignThrottle();
 
     const stackDepth = computed(() => allSpeakers.value.length);
 
@@ -134,6 +130,7 @@ export function useSpeakerRecorder() {
         await assignSpeakerRows('发言人', nextRows, 'scope');
     }
 
+    // 每次任意变量修改都会广播快照，做一下去重，没用统一的 eiSubscribe 是因为当时还没写
     async function handleSpeakerChange(nextValue: unknown) {
         const speaker = normalizeSpeaker(nextValue);
         if (!speaker || speaker === lastHandledSpeaker.value) {
@@ -162,7 +159,7 @@ export function useSpeakerRecorder() {
         const activePl = onlineRows.map((r) => r.pl).filter((x) => x && x !== EMPTY_SPEAKER);
         const activeNpc = onlineRows.map((r) => r.npc).filter((x) => x && x !== EMPTY_SPEAKER);
 
-        // 兼容无卡的 gm ,All的写入不依赖ei.now
+        // 兼容无卡的 GM ,All的写入不依赖ei.now
         insertSpeakerDeduped(activeAll, speaker);
 
         if (ei.now.players.includes(speaker)) {
@@ -201,7 +198,6 @@ export function useSpeakerRecorder() {
             ),
         );
 
-        // 监听发言人
         unsubscribeFns.push(
             ei.subscribe('当前.发言者', (value) => {
                 void handleSpeakerChange(value);
