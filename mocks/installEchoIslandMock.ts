@@ -233,6 +233,9 @@ export function installEchoIslandMock() {
         get theme() {
             return currentTheme;
         },
+        get me() {
+            return typeof currentVariables.观看者 === 'string' ? currentVariables.观看者 : '';
+        },
         now: deepClone(echoIslandMockConfig.now),
         onReady(fn: () => void) {
             ready.then(fn);

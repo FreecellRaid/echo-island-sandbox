@@ -5,6 +5,7 @@ interface EchoIslandApi {
     localVariables: Record<string, unknown>;
     globalVariables: Record<string, unknown>;
     theme: 'light' | 'dark';
+    me: string;
     now: {
         all: string[];
         players: string[];

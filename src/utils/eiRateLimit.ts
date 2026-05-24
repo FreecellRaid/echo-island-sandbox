@@ -1,5 +1,5 @@
 type Scope = 'scope' | 'db';
-type GuardableEi = Pick<NonNullable<Window['EI']>, 'assign' | 'msg' | 'toast' | 'parse'>;
+type GuardableEi = Pick<NonNullable<Window['EI']>, 'assign' | 'msg' | 'toast' | 'parse' | 'me'>;
 type EiGetter = () => GuardableEi | undefined;
 type AsyncVoid = Promise<void>;
 
@@ -13,6 +13,10 @@ interface RateLimitMessages {
 interface RateLimitOptions {
     getEi?: EiGetter;
     messages?: RateLimitMessages;
+}
+
+interface ThrottleOptions extends RateLimitOptions {
+    burstLimit?: number;
 }
 
 interface GmLockOptions extends RateLimitOptions {
@@ -76,12 +80,21 @@ function runEiTask<TArgs extends unknown[]>(
     return task(ei, args);
 }
 
+// 优先读同步可用的 EI.me，只有旧环境缺失时才退回 parse。
+async function readEiViewer(ei: GuardableEi) {
+    if (typeof ei.me === 'string' && ei.me.trim().length > 0) {
+        return ei.me;
+    }
+
+    return ei.parse('${当前.观看者}');
+}
+
 export function withEiGmLock<TArgs extends unknown[]>(
     task: (ei: GuardableEi, args: TArgs) => AsyncVoid,
     options: GmLockOptions = {},
 ) {
     return async (ei: GuardableEi, args: TArgs) => {
-        const viewer = await ei.parse('${当前.观看者}');
+        const viewer = await readEiViewer(ei);
         const gmName = options.gmName ?? 'GM';
         const isGmViewer = typeof viewer === 'string' && viewer.trim() === gmName;
 
@@ -158,17 +171,46 @@ export function createEiDebounce<TArgs extends unknown[]>(
     return run;
 }
 
+// 固定窗口节流：窗口内允许 burstLimit 次立即执行；超出的调用只保留最后一次，
+// 并在窗口结束时补一次 trailing 执行，尽量贴近 EI “可短时连发”的限制。
 export function createEiThrottle<TArgs extends unknown[]>(
     task: (ei: GuardableEi, args: TArgs) => AsyncVoid,
     waitMs = 1000,
-    options: RateLimitOptions = {},
+    options: ThrottleOptions = {},
 ) {
     const getEi = options.getEi ?? (() => window.EI);
     const toast = createToast(getEi, options.messages);
+    const burstLimit = Math.max(1, Math.floor(options.burstLimit ?? 1));
     let timerId: ReturnType<typeof window.setTimeout> | null = null;
-    let lastExecutedAt = 0;
+    let windowStartedAt = 0;
+    let executionCount = 0;
     let trailingArgs: TArgs | null = null;
     const deferredQueue: Deferred[] = [];
+
+    function resetWindow(now: number) {
+        if (windowStartedAt === 0 || now - windowStartedAt >= waitMs) {
+            windowStartedAt = now;
+            executionCount = 0;
+        }
+    }
+
+    async function execute(args: TArgs, flushQueued = false) {
+        const now = Date.now();
+        resetWindow(now);
+        executionCount += 1;
+
+        try {
+            await runEiTask(getEi, options.messages, task, args);
+            if (flushQueued) {
+                flushDeferredQueue(deferredQueue);
+            }
+        } catch (error) {
+            if (flushQueued) {
+                flushDeferredQueue(deferredQueue, error);
+            }
+            throw error;
+        }
+    }
 
     const flushTrailing = async () => {
         timerId = null;
@@ -180,23 +222,21 @@ export function createEiThrottle<TArgs extends unknown[]>(
             return;
         }
 
-        lastExecutedAt = Date.now();
-
-        try {
-            await runEiTask(getEi, options.messages, task, queuedArgs);
-            flushDeferredQueue(deferredQueue);
-        } catch (error) {
-            flushDeferredQueue(deferredQueue, error);
-        }
+        await execute(queuedArgs, true);
     };
 
     const run: Runner<TArgs> = async (...args) => {
         const now = Date.now();
-        const elapsed = now - lastExecutedAt;
+        resetWindow(now);
 
-        if (lastExecutedAt === 0 || elapsed >= waitMs) {
-            lastExecutedAt = now;
-            return runEiTask(getEi, options.messages, task, args);
+        if (executionCount < burstLimit) {
+            if (timerId !== null) {
+                window.clearTimeout(timerId as unknown as number);
+                timerId = null;
+                trailingArgs = null;
+            }
+
+            return execute(args, deferredQueue.length > 0);
         }
 
         trailingArgs = args;
@@ -211,7 +251,7 @@ export function createEiThrottle<TArgs extends unknown[]>(
         toast('scheduled');
         timerId = window.setTimeout(() => {
             void flushTrailing();
-        }, waitMs - elapsed) as unknown as ReturnType<typeof window.setTimeout>;
+        }, Math.max(waitMs - (now - windowStartedAt), 0)) as unknown as ReturnType<typeof window.setTimeout>;
 
         return deferred.promise;
     };
@@ -219,7 +259,7 @@ export function createEiThrottle<TArgs extends unknown[]>(
     return run;
 }
 
-export function createEiAssignDebounce(waitMs = 1000, options: RateLimitOptions = {}) {
+export function createEiAssignDebounce(waitMs = 2000, options: RateLimitOptions = {}) {
     return createEiDebounce<[path: string, value: unknown, scope?: Scope]>(
         (ei, [path, value, scope]) => ei.assign(path, value, scope),
         waitMs,
@@ -234,11 +274,12 @@ export function createEiAssignDebounce(waitMs = 1000, options: RateLimitOptions 
     );
 }
 
-export function createEiAssignThrottle(waitMs = 1000, options: RateLimitOptions = {}) {
+export function createEiAssignThrottle(waitMs = 2000, options: RateLimitOptions = {}) {
     return createEiThrottle<[path: string, value: unknown, scope?: Scope]>(
         (ei, [path, value, scope]) => ei.assign(path, value, scope),
         waitMs,
         {
+            burstLimit: 2,
             ...options,
             messages: {
                 scheduled: '写入过快，已排队等待下一次写入。',
@@ -249,7 +290,7 @@ export function createEiAssignThrottle(waitMs = 1000, options: RateLimitOptions 
     );
 }
 
-export function createEiAssignDebounceByGm(waitMs = 1000, options: GmLockOptions = {}) {
+export function createEiAssignDebounceByGm(waitMs = 2000, options: GmLockOptions = {}) {
     return createEiDebounce<[path: string, value: unknown, scope?: Scope]>(
         withEiGmLock((ei, [path, value, scope]) => ei.assign(path, value, scope), options),
         waitMs,
@@ -265,11 +306,12 @@ export function createEiAssignDebounceByGm(waitMs = 1000, options: GmLockOptions
     );
 }
 
-export function createEiAssignThrottleByGm(waitMs = 1000, options: GmLockOptions = {}) {
+export function createEiAssignThrottleByGm(waitMs = 2000, options: GmLockOptions = {}) {
     return createEiThrottle<[path: string, value: unknown, scope?: Scope]>(
         withEiGmLock((ei, [path, value, scope]) => ei.assign(path, value, scope), options),
         waitMs,
         {
+            burstLimit: 2,
             ...options,
             messages: {
                 scheduled: '写入过快，已排队等待下一次写入。',
@@ -305,6 +347,7 @@ export function createEiMsgThrottle(waitMs = 1000, options: RateLimitOptions = {
         },
         waitMs,
         {
+            burstLimit: 2,
             ...options,
             messages: {
                 scheduled: '消息发送过快，已排队等待发送。',
@@ -340,6 +383,7 @@ export function createEiMsgThrottleByGm(waitMs = 1000, options: GmLockOptions = 
         }, options),
         waitMs,
         {
+            burstLimit: 2,
             ...options,
             messages: {
                 scheduled: '消息发送过快，已排队等待发送。',
