@@ -2,7 +2,7 @@
 
 （会有这个 repo 大概是为了方便岛主 code review ，大概不会有别人用得到……吧？）
 
-使用时把需要的 component/composable 挂在根组件上再 build ，打包时会自动排除 vue3 runtime 和 mock。  
+使用时把需要的 component/composable 挂在根组件上再 build (最好使用pnpm)，打包时会自动排除 vue3 runtime。  
 因为我不习惯，没装tailwind，如果要用需要自己配一下
 
 ## 项目结构

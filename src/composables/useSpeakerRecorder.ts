@@ -94,9 +94,15 @@ export function useSpeakerRecorder() {
 
     function applyRowsToLocalState(rows: SpeakerTableRow[]) {
         globalRows.value = rows;
-        allSpeakers.value = rows.map((row) => row.all).filter((value) => value && value !== EMPTY_SPEAKER);
-        playerSpeakers.value = rows.map((row) => row.pl).filter((value) => value && value !== EMPTY_SPEAKER);
-        npcSpeakers.value = rows.map((row) => row.npc).filter((value) => value && value !== EMPTY_SPEAKER);
+        allSpeakers.value = rows
+            .map((row) => row.all)
+            .filter((value) => value && value !== EMPTY_SPEAKER);
+        playerSpeakers.value = rows
+            .map((row) => row.pl)
+            .filter((value) => value && value !== EMPTY_SPEAKER);
+        npcSpeakers.value = rows
+            .map((row) => row.npc)
+            .filter((value) => value && value !== EMPTY_SPEAKER);
     }
 
     // 仅本次发言者对应的观看者可写
