@@ -132,11 +132,11 @@ async function send() {
     }
 }
 
-// 辅助：用注释将字符串填充到 >160 字符
+// 辅助：用注释将字符串填充到 > 170 字符，保证 > 160 不朗读
 function padToNotRead(s: string): string {
     const COMMENT = '<!--p-->';
     let out = s;
-    while (out.length <= 160) {
+    while (out.length <= 170) {
         out += COMMENT;
     }
     return out;
@@ -151,24 +151,23 @@ function splitToChunks(s: string, size: number): string[] {
     return res;
 }
 
-// 发送显示内容，保证每条发送的消息长度 > 160（确保不会被朗读）
+// 发送显示内容，保证每条发送的消息长度 > 170（确保不会被朗读）
 async function sendDisplayAsNotRead(displayMsg: string) {
     if (!EI) throw new Error('EI 未就绪');
 
-    // 去掉指令前缀，防止指令重复
+    // 少打空格会导致静默失败吞掉消息，直接删掉已有的指令再统一重加
     const displayText = displayMsg.replace(/^\/md\s+/, '').trim();
     if (!displayText) return;
 
-    // 防止溢出发送字符上限
+    // 防止溢出可发送字符上限
     const CHUNK_SIZE = 1000;
     const rawChunks = splitToChunks(displayText, CHUNK_SIZE);
 
     for (let i = 0; i < rawChunks.length; i++) {
         let chunk = rawChunks[i];
-        // 重新加上 /md 前缀
         let msg = `/md ${chunk}`;
 
-        if (msg.length <= 160) {
+        if (msg.length <= 170) {
             const contentOnly = msg.replace(/^\/md\s+/, '');
             const padded = padToNotRead(contentOnly);
             msg = `/md ${padded}`;
@@ -194,7 +193,7 @@ async function sendReadChunks(readMsg: string) {
         const chunk = readChunks[i];
         const msg = `/md <!-- ${chunk} -->`;
         await sendMsg(msg);
-        // 给朗读时间，140字大概读 15 秒
+        // 给朗读时间，140 字大概读 15 秒
         if (i < readChunks.length - 1) await new Promise((r) => setTimeout(r, 15000));
     }
 }
