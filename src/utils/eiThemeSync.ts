@@ -1,7 +1,5 @@
 import { createEiDebounce, createEiThrottle } from './eiRateLimit';
-
-type Scope = 'scope' | 'db';
-type Theme = 'light' | 'dark';
+import type { Scope, Theme } from '../types/eiTypes';
 
 interface EiThemeSyncOptions {
     path?: string;

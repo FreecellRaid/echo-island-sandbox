@@ -1,4 +1,5 @@
-type Scope = 'scope' | 'db';
+import type { Scope } from '../types/eiTypes';
+
 type GuardableEi = Pick<NonNullable<Window['EI']>, 'assign' | 'msg' | 'toast' | 'parse' | 'me'>;
 type EiGetter = () => GuardableEi | undefined;
 type AsyncVoid = Promise<void>;
@@ -249,9 +250,12 @@ export function createEiThrottle<TArgs extends unknown[]>(
         }
 
         toast('scheduled');
-        timerId = window.setTimeout(() => {
-            void flushTrailing();
-        }, Math.max(waitMs - (now - windowStartedAt), 0)) as unknown as ReturnType<typeof window.setTimeout>;
+        timerId = window.setTimeout(
+            () => {
+                void flushTrailing();
+            },
+            Math.max(waitMs - (now - windowStartedAt), 0),
+        ) as unknown as ReturnType<typeof window.setTimeout>;
 
         return deferred.promise;
     };

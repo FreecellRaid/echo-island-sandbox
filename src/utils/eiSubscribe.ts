@@ -1,4 +1,4 @@
-type Scope = 'scope' | 'db';
+import type { Scope } from '../types/eiTypes';
 
 type DistinctCallback<TValue> = (value: TValue) => void;
 type DistinctComparator = (nextValue: unknown, previousValue: unknown) => boolean;
