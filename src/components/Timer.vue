@@ -171,7 +171,6 @@ const resetTime = async () => {
     isCountdown.value = !!cfg.countdown;
     status.value = 'pause';
     await stopTimerInSandbox(total, 'pause');
-    window.EI?.toast('时间已重制');
 };
 
 onMounted(() => {
